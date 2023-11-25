@@ -11,8 +11,7 @@ class HashRing:
     self.ring = []
     #To keep a log of hash_keys stored in a particular virtual node
     self.keys = {}
-    #To keep a log of data hash requests in a particular virtual node
-    self.log = {}
+
     if nodes:
       for node in nodes:
         self.add_node(node)
@@ -37,10 +36,9 @@ class HashRing:
     else:
       node_index += 1
 
-    keys_to_rehash = self.log.get(self.ring[node_index], [])
+    keys_to_rehash = self.keys.get(self.ring[node_index], [])
     if keys_to_rehash:
       self.keys[self.ring[node_index]] = []
-      self.log[self.ring[node_index]] = []
 
       for key in keys_to_rehash:
         self.add_key(key)
@@ -52,4 +50,3 @@ class HashRing:
       node_hash = self._hash(node)
       if(key_hash > node_hash):
         self.keys[node_hash] = self.keys.get(node_hash).append(key_hash)
-        self.log[node_hash] = self.log.get(node_hash,[]).append(key)
