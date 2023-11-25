@@ -50,3 +50,11 @@ class HashRing:
       node_hash = self._hash(node)
       if(key_hash > node_hash):
         self.keys[node_hash] = self.keys.get(node_hash).append(key_hash)
+
+  def get_node(self, key):
+      """Returns the node to which the given key is mapped."""
+      if not self.ring:
+          return None
+      key_hash = self._hash(key)
+      index = bisect(self.ring, (key_hash, ))
+      return self.ring[index % len(self.ring)][1]
