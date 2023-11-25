@@ -28,7 +28,8 @@ class HashRing:
       node_hash = self._hash(replica_key)
       self.nodes.add(node)
       insort(self.ring, (node_hash, node))
-
+      
+    #shouldn't this thing be inside the for loop?
     node_index = bisect(self.ring, node_hash)
 
     if node_index == len(self.ring)-1:
@@ -50,6 +51,44 @@ class HashRing:
       node_hash = self._hash(node)
       if(key_hash > node_hash):
         self.keys[node_hash] = self.keys.get(node_hash).append(key_hash)
+
+  
+  def remove_node(self, node):
+    """Removes a node and its replicas from the hash ring."""
+    
+    for i in range(self.num_replicas):
+        #get virtual node
+        replica_key = f"{node}-{i}"
+
+        #get hash of virtual node
+        node_hash = self._hash(replica_key)
+
+        #get index of node_hash from ring
+        node_index = bisect(self.ring, node_hash)
+        
+        #get list of keys which will be rehashed after removing this virtual node
+        keys_to_rehash = self.keys.get(self.ring[node_index], [])
+
+        #remove the keys of the virtual node of the "to be rehased" keys from the key list 
+        if keys_to_rehash:
+          self.keys[self.ring[node_index]] = []
+
+        #remove the virtual node
+        self.ring.remove((node_hash, node))
+
+        #rehash the keys and add them to 
+        for key in keys_to_rehash:
+          self.add_key(key)
+    self.nodes.remove(node)
+
+  def remove_key(self, key):
+    """Removes a key the virtual node in hash ring."""
+    key_hash = self._hash(key)
+    for node in self.nodes:
+      node_hash = self._hash(node)
+      if(key_hash > node_hash):
+        self.keys[node_hash] = (self.keys.get(node_hash)).remove(key_hash)
+
 
   def get_node(self, key):
       """Returns the node to which the given key is mapped."""
