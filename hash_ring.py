@@ -98,7 +98,7 @@ class HashRing:
       index = bisect(self.ring, (key_hash, ))
       return self.ring[index % len(self.ring)][1]
   
-  def get_keys(self, node):
+  def get_key(self, node):
         """Returns the keys associated with a given virtual node."""
         node_hash = self._hash(node)
         return self.keys.get(node_hash, [])
