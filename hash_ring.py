@@ -2,7 +2,7 @@ import hashlib
 from bisect import bisect, insort
 
 class HashRing:
-  def _init_(self, nodes=None, num_replicas=3):
+  def __init__(self, nodes=None, num_replicas=3):
     # Number of virtual nodes for each physical node
     self.num_replicas = num_replicas
     #Physical nodes
@@ -29,8 +29,7 @@ class HashRing:
       self.keys[node_hash] = []
       self.nodes.add(node)
       insort(self.ring, node_hash)
-      
-      node_index = bisect(self.ring, node_hash)-1
+      node_index = bisect(self.ring, node_hash)
 
       if node_index == len(self.ring)-1:
         node_index = 0
@@ -39,11 +38,15 @@ class HashRing:
         self.keys[self.ring[node_index]] = []
 
         for key in keys_to_rehash:
-          self.add_key(key)
+          self.add_key(key, True)
   
-  def add_key(self, key):
+  def add_key(self, key, is_rehash=False):
     """Adds a key to a node in hash_ring"""
-    key_hash = self._hash(key)
+    key_hash = ''
+    if(not is_rehash):
+      key_hash = self._hash(key)
+    else:
+      key_hash = key
     for node_hash in self.ring:
       if(key_hash > node_hash):
         self.keys[node_hash].append(key_hash)
@@ -93,7 +96,7 @@ class HashRing:
     if not self.ring:
         return None
     key_hash = self._hash(key)
-    index = bisect(self.ring, (key_hash, ))
+    index = bisect(self.ring, key_hash)
     return self.ring[index % len(self.ring)][1]
   
   def get_key(self, node):
