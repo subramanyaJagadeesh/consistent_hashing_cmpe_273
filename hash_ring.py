@@ -47,9 +47,11 @@ class HashRing:
       key_hash = self._hash(key)
     else:
       key_hash = key
-    for node_hash in self.ring:
-      if(key_hash > node_hash):
-        self.keys[node_hash].append(key_hash)
+    for i in range(1, len(self.ring)):
+      prev = self.ring[i-1]
+      curr = self.ring[i]
+      if(key_hash > prev and key_hash < curr ):
+        self.keys[prev].append(key_hash)
         return
     self.keys[self.ring[0]].append(key_hash)
 
@@ -108,9 +110,8 @@ class HashRing:
 def main():
   hashRing = HashRing()
   hashRing.add_node('A')
-  hashRing.add_node('B')
 
-  print(hashRing.ring)
+  # print(hashRing.ring)
 
   hashRing.add_key("Apache")
   hashRing.add_key("Arrow")
