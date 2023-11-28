@@ -30,14 +30,13 @@ class HashRing:
       self.nodes.add(node)
       insort(self.ring, (node_hash, node))
       
-      node_index = bisect(self.ring, (node_hash, node))-1
+      node_index = bisect(self.ring, (node_hash, node))
 
-      if node_index == len(self.ring)-1:
+      if node_index == len(self.ring):
         node_index = 0
-      keys_to_rehash = self.keys.get(self.ring[node_index], [])
+      keys_to_rehash = self.keys.get(self.ring[node_index])
       if keys_to_rehash:
         self.keys[self.ring[node_index]] = []
-
         for key in keys_to_rehash:
           self.add_key(key)
   
@@ -47,7 +46,6 @@ class HashRing:
     for node_hash, _ in self.ring:
       if(key_hash > node_hash):
         self.keys[node_hash].append(key_hash)
-        print('key',self.keys)
         return
     self.keys[self.ring[0][0]].append(key_hash)
 
@@ -105,6 +103,13 @@ class HashRing:
 ring = HashRing()
 ring._init_([], 4)
 ring.add_node('node 1')
-ring.add_node('node 2')
 ring.add_key('something')
-ring.add_key('asdasdasß')
+ring.add_key('absabdaosudas')
+ring.add_key('sdbfnsdfo')
+ring.add_key('iwyergifbs')
+ring.add_node('node 2')
+ring.add_key('asasdasd')
+ring.add_key('udbaidwe')
+ring.add_key('jdfiwdiw')
+ring.add_node('node 3')
+print(ring.keys)
