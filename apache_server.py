@@ -1,3 +1,4 @@
+import pathlib
 import pyarrow as pa
 import pyarrow.flight as fl
 
@@ -20,8 +21,10 @@ flight_info = fl.FlightInfo(schema)
 
 # Define a Flight endpoint to serve the FlightInfo and RecordBatch
 class FlightServer(fl.FlightServerBase):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, location="grpc://0.0.0.0:8815", repo=pathlib.Path("./datasets"), **kwargs):
+        super(FlightServer, self).__init__(location, **kwargs)
+        self._location = location
+        self._repo = repo
         
     def list_flights(self, context, criteria):
         return [fl.FlightEndpoint("example", [flight_info])]
