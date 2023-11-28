@@ -3,13 +3,10 @@ import pyarrow as pa
 import pyarrow.flight as fl
 
 # Define a Flight endpoint
-location = fl.Location.for_grpc_tcp('localhost', 5000)
+location = fl.Location.for_grpc_tcp('localhost', 1000)
 
 # Define a FlightInfo object with schema and data
-schema = pa.schema([
-    ('id', pa.int32()),
-    ('name', pa.string())
-])
+schema = pa.schema()
 
 data = [
     pa.array([1, 2, 3]),

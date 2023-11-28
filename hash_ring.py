@@ -3,14 +3,14 @@ from bisect import bisect, insort
 import mmh3
 
 class LinkedNode:
-    def __init__(self, key):
-        self.key = key
-        self.next = None
+  def __init__(self, key):
+    self.key = key
+    self.next = None
 
 class HashRing:
-  def __init__(self, nodes=None, num_replicas=2, data_replication =0):
+  def __init__(self, nodes=None, virtual_nodes=2, data_replication =0):
     # Number of virtual nodes for each physical node
-    self.num_replicas = num_replicas
+    self.virtual_nodes = virtual_nodes
 
     #Number of time data is replicated
     self.data_replication = data_replication
@@ -21,6 +21,9 @@ class HashRing:
     self.ring = []
     #To keep a log of hash_keys stored in a particular virtual node
     self.keys = {}
+
+    #node to node_hash
+    self.node_map = {}
 
     if nodes:
       for node in nodes:
@@ -39,10 +42,11 @@ class HashRing:
 
   def add_node(self, node):
     """Adds a node to the hash ring with its replicas."""
-    for i in range(self.num_replicas):
+    for i in range(self.virtual_nodes):
       replica_key = f"{node}-{i}"
       node_hash = self.hash_function(replica_key)
       self.keys[node_hash] = {}
+      self.node_map[node_hash] = node
       self.nodes.add(node)
       insort(self.ring, node_hash)
       node_index = bisect(self.ring, node_hash)
@@ -67,22 +71,57 @@ class HashRing:
     #add replicated key hashes
     replicated_hashes = self.replicate(key)
     
+    #this is for actual key_hash
+    found_pos = -1
     for i in range(1, len(self.ring)):
       prev = self.ring[i-1]
       curr = self.ring[i]
-      if(key_hash > prev and key_hash < curr ):
+      #insert hash and replicas in node matched
+      if(key_hash > prev and key_hash < curr):
+        found_pos = i
+        self.add_list_node(key_hash, key, self.ring[curr])
+        break
 
-        #implement logic for LinkedList for duplicate hash keys 
+    if found_pos == -1:
+      found_pos = 0
 
-        self.keys[curr][key_hash] = LinkedNode (key)
-        return
-    self.keys[self.ring[0]][key_hash] = LinkedNode (key)
+    #insert hash in first node since no node matched the criteria
+    self.add_list_node(key_hash, key, self.ring[found_pos])
 
+    #to send back the node server that stores the key_hash
+    server_node = self.node_map[self.ring[found_pos]]
+
+    #this is for replica hashes of key_hash
+    found_pos == -1
+    for replica in replicated_hashes:
+      for i in range(1, len(self.ring)):
+        prev = self.ring[i-1]
+        curr = self.ring[i]
+        #insert hash and replicas in node matched
+        if(key_hash > prev and key_hash < curr):
+          self.add_list_node(replica, key, self.ring[curr])
+          break
+    if found_pos == -1:
+      found_pos = 0
+
+    #insert hash in first node since no node matched the criteria
+    self.add_list_node(key_hash, key, self.ring[found_pos])
+    return server_node
+
+  def add_list_node(self, key_hash, key, curr):
+    head = self.keys[curr][key_hash]
+    if head == None:
+      head = LinkedNode(key)
+      self.keys[curr][key_hash] = head
+    else:
+      while head.next is not None:
+        head = head.next
+      head.next = LinkedNode(key)
   
   def remove_node(self, node):
     """Removes a node and its replicas from the hash ring."""
     
-    for i in range(self.num_replicas):
+    for i in range(self.virtual_nodes):
       #get virtual node
       replica_key = f"{node}-{i}"
 
@@ -150,10 +189,10 @@ class HashRing:
     index = bisect(self.ring, key_hash)
     return self.ring[index % len(self.ring)][1]
   
-  def get_key(self, node):
-      """Returns the keys associated with a given virtual node."""
-      node_hash = self.hash_function(node)
-      return self.keys.get(node_hash, [])
+  # def get_key(self, node):
+  #     """Returns the keys associated with a given virtual node."""
+  #     node_hash = self.hash_function(node)
+  #     return self.keys.get(node_hash, [])
 
   def replicate(self, key):
     replicated_hash_keys =[]
