@@ -23,35 +23,32 @@ class HashRing:
 
   def add_node(self, node):
     """Adds a node to the hash ring with its replicas."""
-    node_hash
     for i in range(self.num_replicas):
       replica_key = f"{node}-{i}"
       node_hash = self._hash(replica_key)
+      self.keys[node_hash] = []
       self.nodes.add(node)
-      insort(self.ring, (node_hash, node))
+      insort(self.ring, (node_hash, ))
       
-    #shouldn't this thing be inside the for loop?
-    node_index = bisect(self.ring, node_hash)
+      node_index = bisect(self.ring, (node_hash, node))-1
 
-    if node_index == len(self.ring)-1:
-      node_index = 0
-    else:
-      node_index += 1
+      if node_index == len(self.ring)-1:
+        node_index = 0
+      keys_to_rehash = self.keys.get(self.ring[node_index], [])
+      if keys_to_rehash:
+        self.keys[self.ring[node_index]] = []
 
-    keys_to_rehash = self.keys.get(self.ring[node_index], [])
-    if keys_to_rehash:
-      self.keys[self.ring[node_index]] = []
-
-      for key in keys_to_rehash:
-        self.add_key(key)
+        for key in keys_to_rehash:
+          self.add_key(key)
   
   def add_key(self, key):
     """Adds a key to a node in hash_ring"""
     key_hash = self._hash(key)
-    for node in self.nodes:
-      node_hash = self._hash(node)
+    for node_hash, _ in self.ring:
       if(key_hash > node_hash):
-        self.keys[node_hash] = self.keys.get(node_hash).append(key_hash)
+        self.keys[node_hash].append(key_hash)
+        return
+    self.keys[self.ring[0][0]].append(key_hash)
 
   
   def remove_node(self, node):
@@ -65,7 +62,7 @@ class HashRing:
       node_hash = self._hash(replica_key)
 
       #get index of node_hash from ring
-      node_index = bisect(self.ring, node_hash)
+      node_index = bisect(self.ring, (node_hash, node))
       
       #get list of keys which will be rehashed after removing this virtual node
       keys_to_rehash = self.keys.get(self.ring[node_index], [])
@@ -107,16 +104,19 @@ class HashRing:
 
 def main():
   hashRing = HashRing()
-
+  hashRing._init_([], 4)
   hashRing.add_node('A')
   hashRing.add_node('B')
 
+  print(hashRing.ring)
+
   hashRing.add_key("Apache")
   hashRing.add_key("Arrow")
-  hashRing.add_key("Flight")
+  hashRing.add_key("Flight123")
 
   print(hashRing.keys)
 
+  '''
   hashRing.add_node('C')
   hashRing.add_key("Consistent")
   hashRing.add_key("Hashing")
@@ -129,5 +129,6 @@ def main():
   print(hashRing.keys)
   hashRing.remove_node('B')
   print(hashRing.keys)
+  '''
 if __name__=="__main__": 
     main()
