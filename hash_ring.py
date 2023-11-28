@@ -34,7 +34,8 @@ class HashRing:
   def hash_function(self, key, seed=0):
     "Returns hash for replication"
     #return mmh3.hash128(key)
-    return mmh3.hash(key, seed)
+    #The bitwise & 0xFFFFFFFF operation is applied to the hash value to make it positive
+    return mmh3.hash(key, seed) & 0xFFFFFFFF 
 
   def add_node(self, node):
     """Adds a node to the hash ring with its replicas."""
