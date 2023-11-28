@@ -30,14 +30,13 @@ class HashRing:
       self.nodes.add(node)
       insort(self.ring, (node_hash, ))
       
-      node_index = bisect(self.ring, (node_hash, node))-1
+      node_index = bisect(self.ring, (node_hash, node))
 
-      if node_index == len(self.ring)-1:
+      if node_index == len(self.ring):
         node_index = 0
-      keys_to_rehash = self.keys.get(self.ring[node_index], [])
+      keys_to_rehash = self.keys.get(self.ring[node_index])
       if keys_to_rehash:
         self.keys[self.ring[node_index]] = []
-
         for key in keys_to_rehash:
           self.add_key(key)
   
