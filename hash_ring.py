@@ -103,18 +103,34 @@ class HashRing:
       node_hash = self._hash(node)
       return self.keys.get(node_hash, [])
 
-ring = HashRing()
-ring.add_node('node 1')
-ring.add_key('something')
-ring.add_key('absabdaosudas')
-ring.add_key('sdbfnsdfo')
-ring.add_key('iwyergifbs')
-ring.add_node('node 2')
-ring.add_key('asasdasd')
-ring.add_key('udbaidwe')
-ring.add_key('jdfiwdiw')
-# ring.add_node('node 3')
-sorted(ring.keys.keys(), reverse=True)
-print(ring.keys)
-# print("___________")
-# print(ring.ring)
+
+def main():
+  hashRing = HashRing()
+  hashRing._init_([], 4)
+  hashRing.add_node('A')
+  hashRing.add_node('B')
+
+  print(hashRing.ring)
+
+  hashRing.add_key("Apache")
+  hashRing.add_key("Arrow")
+  hashRing.add_key("Flight123")
+
+  print(hashRing.keys)
+
+  '''
+  hashRing.add_node('C')
+  hashRing.add_key("Consistent")
+  hashRing.add_key("Hashing")
+  hashRing.add_key("Algorithm")
+
+  print(hashRing.keys)
+
+  hashRing.remove_key("Arrow")
+  
+  print(hashRing.keys)
+  hashRing.remove_node('B')
+  print(hashRing.keys)
+  '''
+if __name__=="__main__": 
+    main()
