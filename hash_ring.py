@@ -23,27 +23,26 @@ class HashRing:
 
   def add_node(self, node):
     """Adds a node to the hash ring with its replicas."""
-    node_hash
     for i in range(self.num_replicas):
       replica_key = f"{node}-{i}"
       node_hash = self._hash(replica_key)
       self.nodes.add(node)
       insort(self.ring, (node_hash, node))
       
-    #shouldn't this thing be inside the for loop?
-    node_index = bisect(self.ring, node_hash)
+      #shouldn't this thing be inside the for loop?
+      node_index = bisect(self.ring, node_hash)
 
-    if node_index == len(self.ring)-1:
-      node_index = 0
-    else:
-      node_index += 1
+      if node_index == len(self.ring)-1:
+        node_index = 0
+      else:
+        node_index += 1
 
-    keys_to_rehash = self.keys.get(self.ring[node_index], [])
-    if keys_to_rehash:
-      self.keys[self.ring[node_index]] = []
+      keys_to_rehash = self.keys.get(self.ring[node_index], [])
+      if keys_to_rehash:
+        self.keys[self.ring[node_index]] = []
 
-      for key in keys_to_rehash:
-        self.add_key(key)
+        for key in keys_to_rehash:
+          self.add_key(key)
   
   def add_key(self, key):
     """Adds a key to a node in hash_ring"""
