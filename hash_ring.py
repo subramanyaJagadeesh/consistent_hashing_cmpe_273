@@ -23,6 +23,7 @@ class HashRing:
 
   def add_node(self, node):
     """Adds a node to the hash ring with its replicas."""
+    node_hash
     for i in range(self.num_replicas):
       replica_key = f"{node}-{i}"
       node_hash = self._hash(replica_key)
@@ -57,28 +58,28 @@ class HashRing:
     """Removes a node and its replicas from the hash ring."""
     
     for i in range(self.num_replicas):
-        #get virtual node
-        replica_key = f"{node}-{i}"
+      #get virtual node
+      replica_key = f"{node}-{i}"
 
-        #get hash of virtual node
-        node_hash = self._hash(replica_key)
+      #get hash of virtual node
+      node_hash = self._hash(replica_key)
 
-        #get index of node_hash from ring
-        node_index = bisect(self.ring, node_hash)
-        
-        #get list of keys which will be rehashed after removing this virtual node
-        keys_to_rehash = self.keys.get(self.ring[node_index], [])
+      #get index of node_hash from ring
+      node_index = bisect(self.ring, node_hash)
+      
+      #get list of keys which will be rehashed after removing this virtual node
+      keys_to_rehash = self.keys.get(self.ring[node_index], [])
 
-        #remove the keys of the virtual node of the "to be rehased" keys from the key list 
-        if keys_to_rehash:
-          self.keys[self.ring[node_index]] = []
+      #remove the keys of the virtual node of the "to be rehased" keys from the key list 
+      if keys_to_rehash:
+        self.keys[self.ring[node_index]] = []
 
-        #remove the virtual node
-        self.ring.remove((node_hash, node))
+      #remove the virtual node
+      self.ring.remove((node_hash, node))
 
-        #rehash the keys and add them to 
-        for key in keys_to_rehash:
-          self.add_key(key)
+      #rehash the keys and add them to 
+      for key in keys_to_rehash:
+        self.add_key(key)
     self.nodes.remove(node)
 
   def remove_key(self, key):
@@ -91,14 +92,14 @@ class HashRing:
 
 
   def get_node(self, key):
-      """Returns the node to which the given key is mapped."""
-      if not self.ring:
-          return None
-      key_hash = self._hash(key)
-      index = bisect(self.ring, (key_hash, ))
-      return self.ring[index % len(self.ring)][1]
+    """Returns the node to which the given key is mapped."""
+    if not self.ring:
+        return None
+    key_hash = self._hash(key)
+    index = bisect(self.ring, (key_hash, ))
+    return self.ring[index % len(self.ring)][1]
   
   def get_key(self, node):
-        """Returns the keys associated with a given virtual node."""
-        node_hash = self._hash(node)
-        return self.keys.get(node_hash, [])
+      """Returns the keys associated with a given virtual node."""
+      node_hash = self._hash(node)
+      return self.keys.get(node_hash, [])
