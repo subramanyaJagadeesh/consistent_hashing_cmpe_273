@@ -28,26 +28,27 @@ class HashRing:
       node_hash = self._hash(replica_key)
       self.keys[node_hash] = []
       self.nodes.add(node)
-      insort(self.ring, (node_hash, ))
+      insort(self.ring, node_hash)
       
-      node_index = bisect(self.ring, (node_hash, node))
+      node_index = bisect(self.ring, node_hash)-1
 
-      if node_index == len(self.ring):
+      if node_index == len(self.ring)-1:
         node_index = 0
-      keys_to_rehash = self.keys.get(self.ring[node_index])
+      keys_to_rehash = self.keys.get(self.ring[node_index], [])
       if keys_to_rehash:
         self.keys[self.ring[node_index]] = []
+
         for key in keys_to_rehash:
           self.add_key(key)
   
   def add_key(self, key):
     """Adds a key to a node in hash_ring"""
     key_hash = self._hash(key)
-    for node_hash, _ in self.ring:
+    for node_hash in self.ring:
       if(key_hash > node_hash):
         self.keys[node_hash].append(key_hash)
         return
-    self.keys[self.ring[0][0]].append(key_hash)
+    self.keys[self.ring[0]].append(key_hash)
 
   
   def remove_node(self, node):
@@ -103,7 +104,7 @@ class HashRing:
 
 def main():
   hashRing = HashRing()
-  hashRing._init_([], 4)
+  hashRing._init_([], 2)
   hashRing.add_node('A')
   hashRing.add_node('B')
 
