@@ -103,3 +103,31 @@ class HashRing:
       """Returns the keys associated with a given virtual node."""
       node_hash = self._hash(node)
       return self.keys.get(node_hash, [])
+
+
+def main():
+  hashRing = HashRing()
+
+  hashRing.add_node('A')
+  hashRing.add_node('B')
+
+  hashRing.add_key("Apache")
+  hashRing.add_key("Arrow")
+  hashRing.add_key("Flight")
+
+  print(hashRing.keys)
+
+  hashRing.add_node('C')
+  hashRing.add_key("Consistent")
+  hashRing.add_key("Hashing")
+  hashRing.add_key("Algorithm")
+
+  print(hashRing.keys)
+
+  hashRing.remove_key("Arrow")
+  
+  print(hashRing.keys)
+  hashRing.remove_node('B')
+  print(hashRing.keys)
+if __name__=="__main__": 
+    main()
