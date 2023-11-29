@@ -183,11 +183,17 @@ class HashRing:
 
   def get_node(self, key):
     """Returns the node to which the given key is mapped."""
-    if not self.ring:
-        return None
-    key_hash = self.hash_function(key)
-    index = bisect(self.ring, key_hash)
-    return self.ring[index % len(self.ring)][1]
+    key_hash = self.hash_function(key, self.data_replication)
+
+    # Find the position in the ring where the key_hash belongs
+    for i in range(1, len(self.ring)):
+        prev = self.ring[i - 1]
+        curr = self.ring[i]
+        if key_hash > prev and key_hash < curr:
+            return self.node_map[curr]
+
+    # If the key_hash doesn't belong to any existing position, return the first node
+    return self.node_map[self.ring[0]]
   
   # def get_key(self, node):
   #     """Returns the keys associated with a given virtual node."""
@@ -202,34 +208,38 @@ class HashRing:
 
 def main():
   hashRing = HashRing()
-  hashRing.add_node('A')
-  hashRing.add_node('B')
+  # hashRing.add_node('A')
+  # hashRing.add_node('B')
 
-  print(hashRing.ring)
+  # print(hashRing.ring)
 
-  hashRing.add_key(key = "Apache")
-  hashRing.add_key(key = "Arrow")
-  hashRing.add_key(key = "B-7")
+  # hashRing.add_key(key = "Apache")
+  hashRing.add_node(node = "Arrow")
+  # hashRing.add_key(key = "B-7")
 
-  print(hashRing.keys)
+  # print(hashRing.keys)
   
-  hashRing.add_node('C')
-  print(hashRing.ring)
-  print(hashRing.keys)
+  # hashRing.add_node('C')
+  # print(hashRing.ring)
+  # print(hashRing.keys)
 
-  hashRing.add_key(key = "Consistent")
-  hashRing.add_key(key = "Hashing")
-  hashRing.add_key(key = "Algorithm")
+  # hashRing.add_key(key = "Consistent")
+  # hashRing.add_key(key = "Hashing")
+  # hashRing.add_key(key = "Algorithm")
 
-  print(hashRing.keys)
+  # print(hashRing.keys)
 
-  hashRing.remove_key("Arrow")
+  # hashRing.remove_key("Arrow")
   
-  print(hashRing.keys)
+  # print(hashRing.keys)
 
-  hashRing.remove_node('A')
-  print(hashRing.ring)
-  print(hashRing.keys)
+  # hashRing.remove_node('A')
+  # print(hashRing.ring)
+  # print(hashRing.keys)
+
+  # Assuming hashRing is an instance of the HashRing class
+  node_for_key = hashRing.get_node("Arrow")
+  print(f"The node for the key 'Arrow' is: {node_for_key}") 
 
   
 if __name__=="__main__": 
