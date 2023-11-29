@@ -2,6 +2,7 @@ import pyarrow as pa
 import pyarrow.flight as flight
 from hash_ring import HashRing
 import threading
+import pickle
 
 class Gateway(flight.FlightServerBase):
   def __init__(self, location, server_locations=set()):
@@ -9,6 +10,29 @@ class Gateway(flight.FlightServerBase):
     self.server_locations = server_locations
     self.hr = HashRing()
 
+  def do_put(self, context, descriptor, reader, writer):
+
+    # Read the incoming data from the client
+    batch = reader.read_next_batch()
+    serialized_object = batch.column(0).to_pybytes()
+    
+    #serialized_object = reader.read().to_pybytes()
+
+    # Deserialize the object using pickle
+    company_object = pickle.loads(serialized_object)
+    print("Received Person object on server:", company_object.name)
+
+    # Determine the server to forward the data
+    target_server = self.hr.add_key(company_object.id)
+
+    # Forward the data to the chosen server
+    client = flight.FlightClient(target_server)
+    writer, _ = client.store_key(
+        flight.FlightDescriptor.for_path("string-push"), batch.schema)
+    writer.write_batch(batch)
+    writer.close()
+
+  '''
   def do_put(self, context, descriptor, reader, writer):
     # Read the incoming data from the client
     batch = reader.read_next_batch()
@@ -23,7 +47,7 @@ class Gateway(flight.FlightServerBase):
         flight.FlightDescriptor.for_path("string-push"), batch.schema)
     writer.write_batch(batch)
     writer.close()
-
+  '''
   def do_get(self, context, ticket):
     node = self.hr.get_node(ticket)
     data = pa.array([node], type=pa.string())

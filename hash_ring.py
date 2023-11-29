@@ -29,15 +29,11 @@ class HashRing:
       for node in nodes:
         self.add_node(node)
         self.keys[self.hash_function(node)] = {}
-
-  def _hash(self, key):
-    """Returns a hash for the given key."""
-    return int(hashlib.md5(key.encode('utf-8')).hexdigest(), 16)%100000
   
   def hash_function(self, key, seed=0):
     "Returns hash for replication"
-    #return mmh3.hash128(key)
     #The bitwise & 0xFFFFFFFF operation is applied to the hash value to make it positive
+    #return mmh3.hash128(key) & 0xFFFFFFFF 
     return mmh3.hash(key, seed) & 0xFFFFFFFF 
 
   def add_node(self, node):
@@ -64,7 +60,7 @@ class HashRing:
     """Adds a key to a node in hash_ring"""
     key_hash = ''
     if existing_hash ==-1:
-      key_hash = self.hash_function(key, self.data_replication)
+      key_hash = self.hash_function(key)
     else:
       key_hash = existing_hash
     
@@ -135,11 +131,13 @@ class HashRing:
       keys_to_rehash = self.keys.get(self.ring[ind], {})
 
       #remove the keys of the virtual node of the "to be rehased" keys from the key list 
-      
       del self.keys[self.ring[ind]]
 
       #remove the virtual node
       self.ring.remove(node_hash)
+
+      #remove the node map for the virtual node
+      del(self.node_map[node_hash])
 
       #rehash the keys and add them to 
       for key_hash, key in keys_to_rehash.items():
@@ -148,28 +146,39 @@ class HashRing:
 
   def remove_key(self, key):
     """Removes a key the virtual node in hash ring."""
-    key_hash = self.hash_function(key, self.data_replication)
-    print(key_hash)
-    for node_hash in self.ring:
-      print(self.keys[node_hash])
-      if(key_hash < node_hash):
-        currentNode = self.keys.get(node_hash)[key_hash]
-        prev = None
-        while currentNode is not None:
-          if currentNode.key == key:
-            #removeNode(self, prev, currentNode, node_hash, key_hash)
-            
-            if prev == None:
-              if currentNode.next == None:
-                del self.keys.get(node_hash)[key_hash]
-              else:
-                self.keys.get(node_hash)[key_hash] = currentNode.next
+    original_hash = self.hash_function(key)
+    replicated_hashes = self.replicate(key)
+
+    replicated_hashes.insert(0, original_hash)
+
+    server_nodes = []
+    for key_hash in replicated_hashes:
+      node_index = bisect(self.ring, key_hash)
+
+      if node_index == len(self.ring):
+        node_index = 0
+      #to send back the node server that stores the key_hash
+      server_nodes.append(self.node_map[self.ring[node_index]])
+
+      #search for listnodes in case of collision
+      currentNode = self.keys.get(node_index)[key_hash]
+      prev = None
+      while currentNode is not None:
+        if currentNode.key == key:
+          #removeNode(self, prev, currentNode, node_hash, key_hash)
+          
+          if prev == None:
+            if currentNode.next == None:
+              del self.keys.get(node_index)[key_hash]
             else:
-              prev.next = currentNode.next
-            
-            return
-          prev = current
-          current = current.next
+              self.keys.get(node_index)[key_hash] = currentNode.next
+          else:
+            prev.next = currentNode.next
+          
+          return
+        prev = current
+        current = current.next
+    return server_nodes
 
   def removeNode(self, prev, currentNode, node_hash, key_hash):
     if prev == None:
@@ -183,7 +192,7 @@ class HashRing:
 
   def get_node(self, key):
     """Returns the node to which the given key is mapped."""
-    key_hash = self.hash_function(key, self.data_replication)
+    key_hash = self.hash_function(key)
 
     # Find the position in the ring where the key_hash belongs
     for i in range(1, len(self.ring)):
