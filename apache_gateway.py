@@ -65,7 +65,7 @@ class Gateway(flight.FlightServerBase):
   
   def health_check(self, server):
     client = flight.FlightClient(server)
-    reader = client.health_check(flight.Ticket(b"string-pull"))
+    reader = client.health_check(flight.Ticket(b"health-check"))
     table = reader.read_all()
     if not table:
       self.remove_server(server)

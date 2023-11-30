@@ -74,7 +74,7 @@ if __name__ == "__main__":
         reader = csv.reader(file)
         for row in reader:
             obj = Company(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10])
-            client.add_data(obj)
+            client.add_key(obj)
 
     # Example of receiving data
     received_data = client.get_node("Some key here")
