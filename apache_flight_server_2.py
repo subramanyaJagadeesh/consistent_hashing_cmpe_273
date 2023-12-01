@@ -11,7 +11,7 @@ object_list = []
 
 # Define a Flight service that receives a class object and stores it in the list
 class MyFlightServer(fl.FlightServerBase):
-    def __init__(self, host='127.0.0.1', port='5002'):
+    def __init__(self, host='127.0.0.1', port='8080'):
         super().__init__()
         self.location = f'grpc://{host}:{port}'
     

@@ -21,7 +21,7 @@ record_batch = pa.RecordBatch.from_pandas(table.to_pandas())
 # Serialize the RecordBatch to send
 serialized_record_batch = record_batch.serialize()
 # Connect to the Flight server
-client = fl.connect('grpc://127.0.0.1:5002', disable_server_verification = True)
+client = fl.connect('grpc://127.0.0.1:8080', disable_server_verification = True)
 
 # Get a Flight endpoint for putting data
 endpoint = fl.FlightEndpoint(b'', [])
