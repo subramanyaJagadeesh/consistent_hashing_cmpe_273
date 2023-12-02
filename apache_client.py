@@ -9,43 +9,25 @@ import pickle
 class Client:
     def __init__(self, location):
         self.client = flight.FlightClient(location)
-        self.schema = pa.schema([('response', pa.string())])
 
-    def add_key(self, object):
+    def add_key(self, key, object):
         #serialize the python class object
-        serialized_object = pickle.dumps(object)
-
-        #arrow array with serialized object
-        data = pa.array([serialized_object], type=pa.string())
-        '''
-        # Extract attributes from the object
-        attributes = vars(sample_person)
-
-        # Create Arrow fields based on the attributes
-        arrow_fields = [
-            pa.field(attr_name, pa.string()) if isinstance(attr_value, str) else pa.field(attr_name, pa.int64())
-            for attr_name, attr_value in attributes.items()
-        ]
-
-        # Create the Arrow schema
-        arrow_schema = pa.schema(arrow_fields)
-        '''
+        serialized_obj = pickle.dumps(object)
 
         #schema for the RecordBatch
-        schema = pa.schema([('id', pa.int64()), ('name', pa.string()), ('domain', pa.string()), ('year_founded', pa.int64()), 
-                            ('industry', pa.string()), ('size_range', pa.int64()), ('locality', pa.string()), ('country', pa.string()), 
-                            ('linkedin_url', pa.string()), ('current_employee_estimate', pa.int64()), 
-                            ('total_employee_estimate', pa.int64())])
+        # schema = pa.schema([('id', pa.int64()), ('name', pa.string()), ('domain', pa.string()), ('year_founded', pa.int64()), 
+        #                     ('industry', pa.string()), ('size_range', pa.int64()), ('locality', pa.string()), ('country', pa.string()), 
+        #                     ('linkedin_url', pa.string()), ('current_employee_estimate', pa.int64()), 
+        #                     ('total_employee_estimate', pa.int64())])
 
         # Create the RecordBatch
-        record_batch = pa.RecordBatch.from_arrays([data], schema)
-        
-        # Send the RecordBatch to the gateway
-        writer, _ = self.client.do_put(
-            flight.FlightDescriptor.for_path("string-push"), schema)
-        writer.write_batch(record_batch)
+        # record_batch = pa.RecordBatch.from_arrays([data], schema)
+        table = pa.Table.from_arrays([pa.array([serialized_obj], type=pa.binary())], names=['data'])
+        descriptor = flight.FlightDescriptor.for_path(key)
+        writer, _ = self.client.do_put(descriptor, table.schema)
+        writer.write_table(table)
         writer.close()
-
+        
     def get_node(self, key):
         # Receive data (string) from the gateway
         reader = self.client.do_get(flight.Ticket(f"{key}"))
@@ -67,14 +49,16 @@ class Client:
 
 if __name__ == "__main__":
     # Connect to the gateway (replace with actual gateway address)
-    client = Client("grpc://localhost:1000")
+    client = Client("grpc://localhost:8815")
 
     #send data from csv files
-    with open('../companies_sorted.csv', mode ='r') as file:   
+    with open('./companies_sorted.csv', mode ='r') as file:   
         reader = csv.reader(file)
         for row in reader:
+            if row[0] == 'id':
+                continue
             obj = Company(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10])
-            client.add_key(obj)
+            client.add_key(row[0], obj)
 
     # Example of receiving data
     received_data = client.get_node("Some key here")
