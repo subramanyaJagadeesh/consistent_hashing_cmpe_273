@@ -57,7 +57,7 @@ class Gateway(flight.FlightServerBase):
     reader1 = client.get_table(table_name)
     print(type(reader1))
 
-    return reader1
+    return flight.RecordBatchStream(reader1.read_all())
 
   '''
   def do_put(self, context, descriptor, reader, writer):
