@@ -134,8 +134,7 @@ class Gateway(flight.FlightServerBase):
 
 if __name__ == "__main__":
   # Server locations (replace with actual server addresses)
-  #servers = ["grpc://localhost:8816", "grpc://localhost:8817", "grpc://localhost:8818"]
-  servers = ["grpc://localhost:8816"]
+  servers = ["grpc://localhost:8816", "grpc://localhost:8817", "grpc://localhost:8818"]
 
   # Start the gateway server
   gateway = Gateway("grpc://localhost:8815", servers)

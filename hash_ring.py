@@ -75,7 +75,7 @@ class HashRing:
       #insert hash and replicas in node matched
       if(key_hash > prev and key_hash < curr):
         found_pos = i
-        self.add_list_node(key_hash, key, self.ring[curr])
+        self.add_list_node(key_hash, key, self.ring[found_pos])
         break
 
     if found_pos == -1:
@@ -95,7 +95,8 @@ class HashRing:
         curr = self.ring[i]
         #insert hash and replicas in node matched
         if(key_hash > prev and key_hash < curr):
-          self.add_list_node(replica, key, self.ring[curr])
+          found_pos = i
+          self.add_list_node(replica, key, self.ring[found_pos])
           break
     if found_pos == -1:
       found_pos = 0
@@ -217,7 +218,7 @@ class HashRing:
 
 def main():
   hashRing = HashRing()
-  hashRing.add_node("grpc://localhost:8816")
+  hashRing.add_node("grpc://localhost:8818")
   # hashRing.add_node('B')
 
   print(hashRing.ring)
