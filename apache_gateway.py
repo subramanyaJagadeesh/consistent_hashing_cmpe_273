@@ -58,7 +58,10 @@ class Gateway(flight.FlightServerBase):
   
   def do_get(self, context, ticket):
     table_name = ticket.ticket
-    client = GatewayClient(8816)
+    key = table_name.decode('utf-8')
+
+    target_server = self.hr.get_node(key)
+    client = GatewayClient(int(target_server.split(':')[-1]))
     
     #fetch from server
     reader1 = client.get_table(table_name)
