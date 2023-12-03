@@ -2,12 +2,11 @@ from csv import DictReader
 import pyarrow.flight as flight
 import pyarrow as pa
 
-class TinyClient:
-    def __init__(self, host = 'localhost', port = 8081):
+class ApacheClient:
+    def __init__(self, host = 'localhost', port = 8815):
         self.location = flight.Location.for_grpc_tcp(host, port)
         self.connection = flight.connect(self.location)
         self.connection.wait_for_available()
-        print("Avaibale")
     
     def put_table(self, name, table):
         table_name = name.encode('utf8')
@@ -20,10 +19,11 @@ class TinyClient:
         table_name = name.encode('utf8')
         ticket = flight.Ticket(table_name)
         reader = self.connection.do_get(ticket)
-        return reader.read_all()
+        print(reader)
+        #return reader.read_all()
 
 
-client = TinyClient()
+client = ApacheClient()
 
 with open('./companies_sorted.csv', mode ='r') as file:   
         dict_reader = DictReader(file)
@@ -37,5 +37,4 @@ for rec in list_of_dict:
 
     client.put_table(rec["id"],table)
 
-#print("table:")
-#print(table)
+client.get_table("5944912")

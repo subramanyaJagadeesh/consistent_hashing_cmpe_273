@@ -4,6 +4,28 @@ from hash_ring import HashRing
 import threading
 import pickle
 
+
+class GatewayClient:
+    def __init__(self, port, host = 'localhost'):
+        self.location = flight.Location.for_grpc_tcp(host, port)
+        self.connection = flight.connect(self.location)
+        self.connection.wait_for_available()
+    
+    def put_table(self, name, table):
+        table_name = name
+        descriptor = flight.FlightDescriptor.for_command(table_name)
+        writer, reader = self.connection.do_put(descriptor, table.schema)
+        writer.write(table)
+        writer.close()
+    
+    def get_table(self, name):
+        table_name = name
+        ticket = flight.Ticket(table_name)
+        reader1 = self.connection.do_get(ticket)
+        print(type(reader1))
+        return reader1
+
+
 class Gateway(flight.FlightServerBase):
   def __init__(self, location, server_locations=set()):
     super(Gateway, self).__init__(location)
@@ -12,6 +34,32 @@ class Gateway(flight.FlightServerBase):
     thread = threading.Thread(target=self.run_health_check())
     thread.start()
 
+        
+  def do_put(self, context, descriptor, reader, writer):
+    #get data from apache client
+    table_name = descriptor.command
+    print("Table_name: ")
+    print(table_name)
+    table = reader.read_all()
+    print("table:")
+    print(table)
+    client = GatewayClient(8816)
+    
+    #send to server
+    thread1 = threading.Thread(target=client.put_table(table_name, table))
+    thread1.start()
+  
+  def do_get(self, context, ticket):
+    table_name = ticket.ticket
+    client = GatewayClient(8816)
+    
+    #fetch from server
+    reader1 = client.get_table(table_name)
+    print(type(reader1))
+
+    return reader1
+
+  '''
   def do_put(self, context, descriptor, reader, writer):
     # Read the incoming data from the client
     table = reader.read_all()
@@ -35,22 +83,6 @@ class Gateway(flight.FlightServerBase):
     writer.close()
     return flight.Result(b'Server is healthy')
 
-  '''
-  def do_put(self, context, descriptor, reader, writer):
-    # Read the incoming data from the client
-    batch = reader.read_next_batch()
-    string_data = batch.column(0).to_pylist()[0]
-
-    # Determine the server to forward the data
-    target_server = self.hr.add_key(string_data)
-
-    # Forward the data to the chosen server
-    client = flight.FlightClient(target_server)
-    writer, _ = client.store_key(
-        flight.FlightDescriptor.for_path("string-push"), batch.schema)
-    writer.write_batch(batch)
-    writer.close()
-  '''
   def do_get(self, context, ticket):
     key = ticket.ticket.decode('utf-8')
     node = self.hr.get_node(key)
@@ -60,7 +92,8 @@ class Gateway(flight.FlightServerBase):
 
     # Stream the RecordBatch back to the client
     return flight.RecordBatchStream([schema], [record_batch])
-    
+  '''
+
   def add_server(self, server):
     self.hr.add_node(server)
 
@@ -85,13 +118,14 @@ class Gateway(flight.FlightServerBase):
       return
 
   def run_health_check(self,):
-    threading.Timer(1.0, self.run_health_check).start()
+    threading.Timer(30.0, self.run_health_check).start()
     for server in self.server_locations:
       self.health_check(server)
 
 if __name__ == "__main__":
   # Server locations (replace with actual server addresses)
-  servers = ["grpc://localhost:8816", "grpc://localhost:8817", "grpc://localhost:8818"]
+  #servers = ["grpc://localhost:8816", "grpc://localhost:8817", "grpc://localhost:8818"]
+  servers = ["grpc://localhost:8816"]
 
   # Start the gateway server
   gateway = Gateway("grpc://localhost:8815", servers)

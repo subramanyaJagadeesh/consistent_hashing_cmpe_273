@@ -11,7 +11,8 @@ class FlightServer(fl.FlightServerBase):
         super(FlightServer, self).__init__(location)
         self._location = location
         self._repo = repo
-        self._data_store = {'12': Company('12', 'name')}
+        self.tables = {}
+        self._data_store = {}
     
     #Mainly used for checking server health
     def do_action(self, context, action):
@@ -20,7 +21,32 @@ class FlightServer(fl.FlightServerBase):
             yield fl.Result(b'Server is healthy')
         else:
             raise fl.FlightUnimplementedError(f'Unknown action: {action.type}')
+        
+          
+    def do_put(self, context, descriptor, reader, 
+               writer):
+        table_name = descriptor.command
+        print("Table_name: ")
+        print(table_name)
+        self.tables[table_name] = reader.read_all()
+        print(1)
+        print(len(self.tables[table_name]))
+        print(2)
+        print(self.tables)
+        print(3)
+        print(self.tables[table_name])
+    
+    def do_get(self, context, ticket):
+        table_name = ticket.ticket
+        print("recieved:")
+        print(table_name)
+        table = self.tables[table_name]
+        data = fl.RecordBatchStream(table)
+        print(type(data))
+        return data
 
+
+    '''
     #Used to get the key from data store
     def do_get(self, context, ticket):
         key = ticket.ticket.decode('utf-8')
@@ -46,8 +72,8 @@ class FlightServer(fl.FlightServerBase):
         response_batch = pa.RecordBatch.from_pandas(pd.DataFrame({'response': response_data}))
         writer.write_batch(response_batch)
         writer.close()
-
-server = FlightServer("grpc://localhost:8817")
-print("Starting server2...")
+    '''
+server = FlightServer("grpc://localhost:8816")
+print("Starting server 1 at 8816...")
 
 server.serve()
