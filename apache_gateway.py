@@ -22,7 +22,7 @@ class GatewayClient:
         table_name = name
         ticket = flight.Ticket(table_name)
         reader1 = self.connection.do_get(ticket)
-        print(type(reader1))
+        #print(type(reader1))
         return reader1
 
 
@@ -41,9 +41,16 @@ class Gateway(flight.FlightServerBase):
     print("Table_name: ")
     print(table_name)
     table = reader.read_all()
-    print("table:")
-    print(table)
-    client = GatewayClient(8816)
+    # print("table:")
+    # print(table)
+    
+    # print(table_name.decode('utf8'))
+
+    # Determine the server to forward the data
+    target_server = self.hr.add_key(table_name.decode('utf8'))
+    #print(target_server.split(':')[-1])
+
+    client = GatewayClient(int(target_server.split(':')[-1]))
     
     #send to server
     thread1 = threading.Thread(target=client.put_table(table_name, table))
@@ -55,7 +62,7 @@ class Gateway(flight.FlightServerBase):
     
     #fetch from server
     reader1 = client.get_table(table_name)
-    print(type(reader1))
+    #print(type(reader1))
 
     return flight.RecordBatchStream(reader1.read_all())
 

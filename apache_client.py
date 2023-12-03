@@ -19,8 +19,7 @@ class ApacheClient:
         table_name = name.encode('utf8')
         ticket = flight.Ticket(table_name)
         reader = self.connection.do_get(ticket)
-        print(reader)
-        #return reader.read_all()
+        return reader.read_all()
 
 
 client = ApacheClient()
@@ -30,7 +29,7 @@ with open('./companies_sorted.csv', mode ='r') as file:
      
         list_of_dict = list(dict_reader)
     
-        print(list_of_dict)
+        #print(list_of_dict)
 
 for rec in list_of_dict:
     table =  pa.Table.from_pylist([rec])

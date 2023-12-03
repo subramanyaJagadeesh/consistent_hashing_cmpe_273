@@ -29,12 +29,12 @@ class FlightServer(fl.FlightServerBase):
         print("Table_name: ")
         print(table_name)
         self.tables[table_name] = reader.read_all()
-        print(1)
-        print(len(self.tables[table_name]))
-        print(2)
-        print(self.tables)
-        print(3)
-        print(self.tables[table_name])
+        # print(1)
+        # print(len(self.tables[table_name]))
+        # print(2)
+        # print(self.tables)
+        # print(3)
+        # print(self.tables[table_name])
     
     def do_get(self, context, ticket):
         table_name = ticket.ticket

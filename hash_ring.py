@@ -105,11 +105,11 @@ class HashRing:
     return server_node
 
   def add_list_node(self, key_hash, key, curr):
-    head = self.keys[curr][key_hash]
-    if head == None:
+    if key_hash not in self.keys[curr]:
       head = LinkedNode(key)
       self.keys[curr][key_hash] = head
     else:
+      head = self.keys[curr][key_hash]
       while head.next is not None:
         head = head.next
       head.next = LinkedNode(key)
@@ -217,16 +217,16 @@ class HashRing:
 
 def main():
   hashRing = HashRing()
-  # hashRing.add_node('A')
+  hashRing.add_node("grpc://localhost:8816")
   # hashRing.add_node('B')
 
-  # print(hashRing.ring)
+  print(hashRing.ring)
 
-  # hashRing.add_key(key = "Apache")
-  hashRing.add_node(node = "Arrow")
+  hashRing.add_key(key = "5872184")
+  # hashRing.add_node(node = "Arrow")
   # hashRing.add_key(key = "B-7")
 
-  # print(hashRing.keys)
+  print(hashRing.keys)
   
   # hashRing.add_node('C')
   # print(hashRing.ring)
@@ -247,8 +247,8 @@ def main():
   # print(hashRing.keys)
 
   # Assuming hashRing is an instance of the HashRing class
-  node_for_key = hashRing.get_node("Arrow")
-  print(f"The node for the key 'Arrow' is: {node_for_key}") 
+  # node_for_key = hashRing.get_node("Arrow")
+  # print(f"The node for the key 'Arrow' is: {node_for_key}") 
 
   
 if __name__=="__main__": 
