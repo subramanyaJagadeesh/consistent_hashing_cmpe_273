@@ -38,8 +38,6 @@ class Gateway(flight.FlightServerBase):
   def do_put(self, context, descriptor, reader, writer):
     #get data from apache client
     table_name = descriptor.command
-    print("Table_name: ")
-    print(table_name)
     table = reader.read_all()
     # print("table:")
     # print(table)
@@ -123,7 +121,8 @@ class Gateway(flight.FlightServerBase):
       print(f"Health check for {server} passed, but server didn't respond as expected")
       return
     except Exception as e:
-      self.remove_server(server)
+      if server in self.hr.nodes:
+        self.remove_server(server)
       print(f"Health check failed for server: {server} with error: {e}")
       return
 
