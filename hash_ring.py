@@ -37,6 +37,7 @@ class HashRing:
     return mmh3.hash(key, seed) & 0xFFFFFFFF 
 
   def add_node(self, node):
+    rehashed_servers = {}
     """Adds a node to the hash ring with its replicas."""
     for i in range(self.virtual_nodes):
       replica_key = f"{node}-{i}"
@@ -53,11 +54,13 @@ class HashRing:
       if keys_to_rehash:
         self.keys[self.ring[node_index]] = {}
 
-        for key_hash, key in keys_to_rehash.items():
-          self.add_key(key, key_hash)
+        for key, linkedNode in keys_to_rehash.items():
+          rehashed_servers[linkedNode.key] = self.add_key(key, linkedNode.key)
+    return rehashed_servers
   
   def add_key(self, key, existing_hash=-1):
     """Adds a key to a node in hash_ring"""
+    target_servers = []
     key_hash = ''
     if existing_hash ==-1:
       key_hash = self.hash_function(key)
@@ -84,7 +87,7 @@ class HashRing:
       self.add_list_node(key_hash, key, self.ring[found_pos])
 
     #to send back the node server that stores the key_hash
-    server_node = self.node_map[self.ring[found_pos]]
+    target_servers.append(self.node_map[self.ring[found_pos]])
 
     #this is for replica hashes of key_hash
     for replica in replicated_hashes:
@@ -99,23 +102,25 @@ class HashRing:
           break
       if found_pos == -1:
         found_pos = 0
-        #insert hash in first node since no node matched the criteria
-        self.add_list_node(replica, key, self.ring[found_pos])
-    return server_node
+
+      #insert hash in first node since no node matched the criteria
+      self.add_list_node(key_hash, key, self.ring[found_pos])
+      target_servers.append(self.node_map[self.ring[found_pos]])
+    return target_servers
 
   def add_list_node(self, key_hash, key, curr):
-    if key_hash not in self.keys[curr]:
-      head = LinkedNode(key)
-      self.keys[curr][key_hash] = head
+    if key not in self.keys[curr]:
+      head = LinkedNode(key_hash)
+      self.keys[curr][key] = head
     else:
-      head = self.keys[curr][key_hash]
+      head = self.keys[curr][key]
       while head.next is not None:
         head = head.next
-      head.next = LinkedNode(key)
+      head.next = LinkedNode(key_hash)
   
   def remove_node(self, node):
     """Removes a node and its replicas from the hash ring."""
-    
+    rehashed_servers = {}
     for i in range(self.virtual_nodes):
       #get virtual node
       replica_key = f"{node}-{i}"
@@ -139,9 +144,10 @@ class HashRing:
       del(self.node_map[node_hash])
 
       #rehash the keys and add them to 
-      for key_hash, key in keys_to_rehash.items():
-          self.add_key(key, key_hash)
+      for key, linkedNode in keys_to_rehash.items():
+        rehashed_servers[linkedNode.key] = self.add_key(key, linkedNode.key)
     self.nodes.remove(node)
+    return rehashed_servers
 
   def remove_key(self, key):
     """Removes a key the virtual node in hash ring."""
@@ -189,9 +195,9 @@ class HashRing:
       prev.next = currentNode.next
     return
 
-  def get_node(self, key):
+  def get_node(self, key, isHashedAlready=False):
     """Returns the node to which the given key is mapped."""
-    key_hash = self.hash_function(key)
+    key_hash = self.hash_function(key) if not isHashedAlready else key
 
     # Find the position in the ring where the key_hash belongs
     for i in range(1, len(self.ring)):
@@ -203,52 +209,9 @@ class HashRing:
     # If the key_hash doesn't belong to any existing position, return the first node
     return self.node_map[self.ring[0]]
   
-  # def get_key(self, node):
-  #     """Returns the keys associated with a given virtual node."""
-  #     node_hash = self.hash_function(node)
-  #     return self.keys.get(node_hash, [])
 
   def replicate(self, key):
     replicated_hash_keys =[]
     for i in range(0, self.data_replication):
       replicated_hash_keys.append(self.hash_function(key, 12345+i))
     return replicated_hash_keys
-
-def main():
-  hashRing = HashRing(data_replication=2)
-  hashRing.add_node("grpc://localhost:8818")
-  # hashRing.add_node('B')
-
-  print(hashRing.ring)
-
-  hashRing.add_key(key = "5944912")
-  # hashRing.add_node(node = "Arrow")
-  # hashRing.add_key(key = "B-7")
-
-  print(hashRing.keys)
-  
-  # hashRing.add_node('C')
-  # print(hashRing.ring)
-  # print(hashRing.keys)
-
-  # hashRing.add_key(key = "Consistent")
-  # hashRing.add_key(key = "Hashing")
-  # hashRing.add_key(key = "Algorithm")
-
-  # print(hashRing.keys)
-
-  # hashRing.remove_key("Arrow")
-  
-  # print(hashRing.keys)
-
-  # hashRing.remove_node('A')
-  # print(hashRing.ring)
-  # print(hashRing.keys)
-
-  # Assuming hashRing is an instance of the HashRing class
-  # node_for_key = hashRing.get_node("Arrow")
-  # print(f"The node for the key 'Arrow' is: {node_for_key}") 
-
-  
-if __name__=="__main__": 
-    main()

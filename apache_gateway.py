@@ -45,20 +45,21 @@ class Gateway(flight.FlightServerBase):
     # print(table_name.decode('utf8'))
 
     # Determine the server to forward the data
-    target_server = self.hr.add_key(table_name.decode('utf8'))
-    #print(target_server.split(':')[-1])
+    target_servers = self.hr.add_key(table_name.decode('utf8'))
 
-    client = GatewayClient(int(target_server.split(':')[-1]))
-    
-    #send to server
-    thread1 = threading.Thread(target=client.put_table(table_name, table))
-    thread1.start()
-    print("Current configuration in do_put():")
-    print(self.hr.ring)
-    print(self.hr.node_map)
-    print(self.hr.keys)
-    print(self.hr.nodes)
-    print()
+    for server in target_servers:
+      client = GatewayClient(int(server.split(':')[-1]))
+      
+      #send to server
+      thread1 = threading.Thread(target=client.put_table(str(self.hr.hash_function(table_name)), table))
+      thread1.start()
+      thread1.join()
+      print("Current configuration in do_put():")
+      print(self.hr.ring)
+      print(self.hr.node_map)
+      print(self.hr.keys)
+      print(self.hr.nodes)
+      print()
   
   def do_get(self, context, ticket):
     table_name = ticket.ticket
@@ -68,51 +69,25 @@ class Gateway(flight.FlightServerBase):
     client = GatewayClient(int(target_server.split(':')[-1]))
     
     #fetch from server
-    reader1 = client.get_table(table_name)
-    #print(type(reader1))
+    reader1 = client.get_table(str(self.hr.hash_function(table_name)))
 
     return flight.RecordBatchStream(reader1.read_all())
 
-  '''
-  def do_put(self, context, descriptor, reader, writer):
-    # Read the incoming data from the client
-    table = reader.read_all()
-    serialized_obj = table.column('data').to_pylist()[0]
-    
-    #serialized_object = reader.read().to_pybytes()
-
-    # Deserialize the object using pickle
-    company_object = pickle.loads(serialized_obj)
-    print("Received Person object on server:", company_object.name)
-
-    # Determine the server to forward the data
-    target_server = self.hr.add_key(company_object.id)
-
-    # Forward the data to the chosen server
-    client = flight.FlightClient(target_server)
-    table = pa.Table.from_arrays([pa.array([serialized_obj], type=pa.binary())], names=['data'])
-    descriptor = flight.FlightDescriptor.for_path(company_object.id)
-    writer, _ = client.do_put(descriptor, table.schema)
-    writer.write_table(table)
-    writer.close()
-    return flight.Result(b'Server is healthy')
-
-  def do_get(self, context, ticket):
-    key = ticket.ticket.decode('utf-8')
-    node = self.hr.get_node(key)
-    data = pa.array([node], type=pa.string())
-    schema = pa.schema([('response', pa.string())])
-    record_batch = pa.RecordBatch.from_arrays([data], schema)
-
-    # Stream the RecordBatch back to the client
-    return flight.RecordBatchStream([schema], [record_batch])
-  '''
-
   def add_server(self, server):
-    self.hr.add_node(server)
-
+    self.rearrange_tables(self.hr.add_node(server))
+        
   def remove_server(self, server):
-    self.hr.remove_node(server)
+    self.rearrange_tables(self.hr.remove_node(server))
+
+  def rearrange_tables(self, rehashed_servers_dict) :
+    for hash_key, servers in rehashed_servers_dict.items():
+      stored_server = self.hr.get_node(hash_key, True)
+      client = GatewayClient(int(stored_server.split(":")[-1]))
+      target_table = client.get_table(str(hash_key)).read_all()
+
+      for server in servers:
+        client = GatewayClient(int(server.split(":")[-1]))
+        client.put_table(str(hash_key), target_table)
   
   def health_check(self, server):
     try:
@@ -135,17 +110,17 @@ class Gateway(flight.FlightServerBase):
     except Exception as e:
       if server in self.hr.nodes:
         self.remove_server(server)
-      print(f"Health check failed for server: {server} with error: {e}")
+      print(f"Health check failed for server: {server}")
       print("Current configuration in rem_server():")
       print(self.hr.ring)
       print(self.hr.node_map)
       print(self.hr.keys)
       print(self.hr.nodes)
-      print()
+      print() 
       return
 
   def run_health_check(self,):
-    threading.Timer(30.0, self.run_health_check).start()
+    threading.Timer(10.0, self.run_health_check).start()
     for server in self.server_locations:
       self.health_check(server)
 

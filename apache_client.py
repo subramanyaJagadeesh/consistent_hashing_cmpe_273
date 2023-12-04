@@ -39,4 +39,4 @@ for rec in list_of_dict:
     client.put_table(rec["id"],table)
     #time.sleep(20)
 
-#client.get_table("5944912")
+print(client.get_table("5944912"))
