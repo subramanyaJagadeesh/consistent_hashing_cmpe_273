@@ -3,13 +3,14 @@ import pyarrow.flight as flight
 from hash_ring import HashRing
 import threading
 
-
+#to send the data to respective servers
 class GatewayClient:
     def __init__(self, port, host = 'localhost'):
         self.location = flight.Location.for_grpc_tcp(host, port)
         self.connection = flight.connect(self.location)
         self.connection.wait_for_available()
     
+    #will connect to the server and send the table with the key
     def put_table(self, name, table):
         table_name = name
         descriptor = flight.FlightDescriptor.for_command(table_name)
@@ -17,6 +18,7 @@ class GatewayClient:
         writer.write(table)
         writer.close()
     
+    #will connect to the server and get the table for the key asked by the client
     def get_table(self, name):
         table_name = name
         ticket = flight.Ticket(table_name)
@@ -25,6 +27,7 @@ class GatewayClient:
         return reader1
 
 
+#to act as the server for clients
 class Gateway(flight.FlightServerBase):
   def __init__(self, location, server_locations=set()):
     super(Gateway, self).__init__(location)
@@ -33,17 +36,15 @@ class Gateway(flight.FlightServerBase):
     thread = threading.Thread(target=self.run_health_check())
     thread.start()
 
-        
+  #sends data to server by calculating the virtual node location      
   def do_put(self, context, descriptor, reader, writer):
     #get data from apache client
     table_name = descriptor.command
     table = reader.read_all()
     # print("table:")
     # print(table)
-    
-    # print(table_name.decode('utf8'))
 
-    # Determine the server to forward the data
+    # Determine the servers to forward the data along with replicated hashes
     target_servers = self.hr.add_key(table_name.decode('utf8'))
 
     for server in target_servers:
@@ -55,6 +56,7 @@ class Gateway(flight.FlightServerBase):
       thread1.join()
     self.hr.print_data()
   
+  # fetches the data requested by client using the key value
   def do_get(self, context, ticket):
     table_name = ticket.ticket
     key = table_name.decode('utf-8')
@@ -101,7 +103,7 @@ class Gateway(flight.FlightServerBase):
       self.health_check(server)
 
 if __name__ == "__main__":
-  # Server locations (replace with actual server addresses)
+  # Server locations
   servers = ["grpc://localhost:8816", "grpc://localhost:8817", "grpc://localhost:8818"]
 
   # Start the gateway server
