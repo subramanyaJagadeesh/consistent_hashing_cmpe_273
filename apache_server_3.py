@@ -44,6 +44,6 @@ class FlightServer(fl.FlightServerBase):
         return fl.RecordBatchStream(table)
 
 server = FlightServer("grpc://localhost:8818")
-print("Starting server 2 at 8818...")
+print("Starting server 3 at 8818...")
 
 server.serve()

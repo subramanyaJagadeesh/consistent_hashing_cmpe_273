@@ -2,7 +2,6 @@ import pyarrow as pa
 import pyarrow.flight as flight
 from hash_ring import HashRing
 import threading
-import pickle
 
 
 class GatewayClient:
@@ -51,15 +50,10 @@ class Gateway(flight.FlightServerBase):
       client = GatewayClient(int(server.split(':')[-1]))
       
       #send to server
-      thread1 = threading.Thread(target=client.put_table(str(self.hr.hash_function(table_name)), table))
+      thread1 = threading.Thread(target=client.put_table(table_name, table))
       thread1.start()
       thread1.join()
-      print("Current configuration in do_put():")
-      print(self.hr.ring)
-      print(self.hr.node_map)
-      print(self.hr.keys)
-      print(self.hr.nodes)
-      print()
+    self.hr.print_data()
   
   def do_get(self, context, ticket):
     table_name = ticket.ticket
@@ -69,26 +63,16 @@ class Gateway(flight.FlightServerBase):
     client = GatewayClient(int(target_server.split(':')[-1]))
     
     #fetch from server
-    reader1 = client.get_table(str(self.hr.hash_function(table_name)))
+    reader1 = client.get_table(table_name)
 
     return flight.RecordBatchStream(reader1.read_all())
 
   def add_server(self, server):
-    self.rearrange_tables(self.hr.add_node(server))
+    self.hr.add_node(server)
         
   def remove_server(self, server):
-    self.rearrange_tables(self.hr.remove_node(server))
+    self.hr.remove_node(server)
 
-  def rearrange_tables(self, rehashed_servers_dict) :
-    for hash_key, servers in rehashed_servers_dict.items():
-      stored_server = self.hr.get_node(hash_key, True)
-      client = GatewayClient(int(stored_server.split(":")[-1]))
-      target_table = client.get_table(str(hash_key)).read_all()
-
-      for server in servers:
-        client = GatewayClient(int(server.split(":")[-1]))
-        client.put_table(str(hash_key), target_table)
-  
   def health_check(self, server):
     try:
       action = flight.Action('health_check', b'')
@@ -97,26 +81,18 @@ class Gateway(flight.FlightServerBase):
       for result in results:
         if server not in self.hr.nodes:
           self.add_server(server)
+          self.hr.print_data()
+
         print(f"Server: {server} is healthy")
-        print("Current configuration in add_server():")
-        print(self.hr.ring)
-        print(self.hr.node_map)
-        print(self.hr.keys)
-        print(self.hr.nodes)
-        print()
         return
       print(f"Health check for {server} passed, but server didn't respond as expected")
       return
     except Exception as e:
       if server in self.hr.nodes:
         self.remove_server(server)
-      print(f"Health check failed for server: {server}")
-      print("Current configuration in rem_server():")
-      print(self.hr.ring)
-      print(self.hr.node_map)
-      print(self.hr.keys)
-      print(self.hr.nodes)
-      print() 
+        self.hr.print_data()
+        print(f"Health check failed for server: {server}")
+        
       return
 
   def run_health_check(self,):
