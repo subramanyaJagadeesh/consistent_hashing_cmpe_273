@@ -80,29 +80,27 @@ class HashRing:
 
     if found_pos == -1:
       found_pos = 0
-
-    #insert hash in first node since no node matched the criteria
-    self.add_list_node(key_hash, key, self.ring[found_pos])
+      #insert hash in first node since no node matched the criteria
+      self.add_list_node(key_hash, key, self.ring[found_pos])
 
     #to send back the node server that stores the key_hash
     server_node = self.node_map[self.ring[found_pos]]
 
     #this is for replica hashes of key_hash
-    found_pos == -1
     for replica in replicated_hashes:
+      found_pos = -1
       for i in range(1, len(self.ring)):
         prev = self.ring[i-1]
         curr = self.ring[i]
         #insert hash and replicas in node matched
-        if(key_hash > prev and key_hash < curr):
+        if(replica > prev and replica < curr):
           found_pos = i
           self.add_list_node(replica, key, self.ring[found_pos])
           break
-    if found_pos == -1:
-      found_pos = 0
-
-    #insert hash in first node since no node matched the criteria
-    self.add_list_node(key_hash, key, self.ring[found_pos])
+      if found_pos == -1:
+        found_pos = 0
+        #insert hash in first node since no node matched the criteria
+        self.add_list_node(replica, key, self.ring[found_pos])
     return server_node
 
   def add_list_node(self, key_hash, key, curr):
@@ -217,13 +215,13 @@ class HashRing:
     return replicated_hash_keys
 
 def main():
-  hashRing = HashRing()
+  hashRing = HashRing(data_replication=2)
   hashRing.add_node("grpc://localhost:8818")
   # hashRing.add_node('B')
 
   print(hashRing.ring)
 
-  hashRing.add_key(key = "5872184")
+  hashRing.add_key(key = "5944912")
   # hashRing.add_node(node = "Arrow")
   # hashRing.add_key(key = "B-7")
 

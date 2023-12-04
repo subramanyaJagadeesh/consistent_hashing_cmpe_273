@@ -30,7 +30,7 @@ class Gateway(flight.FlightServerBase):
   def __init__(self, location, server_locations=set()):
     super(Gateway, self).__init__(location)
     self.server_locations = server_locations
-    self.hr = HashRing()
+    self.hr = HashRing(data_replication =2)
     thread = threading.Thread(target=self.run_health_check())
     thread.start()
 
@@ -53,6 +53,12 @@ class Gateway(flight.FlightServerBase):
     #send to server
     thread1 = threading.Thread(target=client.put_table(table_name, table))
     thread1.start()
+    print("Current configuration in do_put():")
+    print(self.hr.ring)
+    print(self.hr.node_map)
+    print(self.hr.keys)
+    print(self.hr.nodes)
+    print()
   
   def do_get(self, context, ticket):
     table_name = ticket.ticket
@@ -117,6 +123,12 @@ class Gateway(flight.FlightServerBase):
         if server not in self.hr.nodes:
           self.add_server(server)
         print(f"Server: {server} is healthy")
+        print("Current configuration in add_server():")
+        print(self.hr.ring)
+        print(self.hr.node_map)
+        print(self.hr.keys)
+        print(self.hr.nodes)
+        print()
         return
       print(f"Health check for {server} passed, but server didn't respond as expected")
       return
@@ -124,6 +136,12 @@ class Gateway(flight.FlightServerBase):
       if server in self.hr.nodes:
         self.remove_server(server)
       print(f"Health check failed for server: {server} with error: {e}")
+      print("Current configuration in rem_server():")
+      print(self.hr.ring)
+      print(self.hr.node_map)
+      print(self.hr.keys)
+      print(self.hr.nodes)
+      print()
       return
 
   def run_health_check(self,):

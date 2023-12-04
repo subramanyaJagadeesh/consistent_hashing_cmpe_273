@@ -1,4 +1,5 @@
 from csv import DictReader
+import time
 import pyarrow.flight as flight
 import pyarrow as pa
 
@@ -30,10 +31,12 @@ with open('./companies_sorted.csv', mode ='r') as file:
         list_of_dict = list(dict_reader)
     
         #print(list_of_dict)
-
+count =0
 for rec in list_of_dict:
+    #count= count+1
     table =  pa.Table.from_pylist([rec])
-
+    #if count ==3:
     client.put_table(rec["id"],table)
+    #time.sleep(20)
 
-client.get_table("5944912")
+#client.get_table("5944912")

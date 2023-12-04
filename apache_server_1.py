@@ -26,8 +26,8 @@ class FlightServer(fl.FlightServerBase):
     def do_put(self, context, descriptor, reader, 
                writer):
         table_name = descriptor.command
-        print("Table_name: ")
-        print(table_name)
+        # print("Table_name: ")
+        # print(table_name)
         self.tables[table_name] = reader.read_all()
         # print(1)
         # print(len(self.tables[table_name]))
@@ -35,6 +35,8 @@ class FlightServer(fl.FlightServerBase):
         # print(self.tables)
         # print(3)
         # print(self.tables[table_name])
+        print("Keys:")
+        print(self.tables.keys())
     
     def do_get(self, context, ticket):
         table_name = ticket.ticket
