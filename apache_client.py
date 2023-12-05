@@ -33,6 +33,6 @@ with open('./companies_sorted.csv', mode ='r') as file:
 for rec in list_of_dict:
     table =  pa.Table.from_pylist([rec])
     client.put_table(rec["id"],table)
-    time.sleep(5)
+    time.sleep(15)
 
 print(client.get_table("5944912"))

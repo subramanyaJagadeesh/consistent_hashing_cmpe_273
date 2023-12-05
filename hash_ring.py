@@ -53,8 +53,8 @@ class HashRing:
       if keys_to_rehash:
         self.keys[self.ring[node_index]] = {}
 
-        for key, linkedNode in keys_to_rehash.items():
-          self.add_key(key, linkedNode.key)
+        for key_hash, linkedNode in keys_to_rehash.items():
+          self.add_key(linkedNode.key, key_hash)
   
   def add_key(self, key, existing_hash=-1):
     """Adds a key to a node in hash_ring"""
@@ -105,14 +105,14 @@ class HashRing:
     return target_servers
 
   def add_list_node(self, key_hash, key, curr):
-    if key not in self.keys[curr]:
-      head = LinkedNode(key_hash)
-      self.keys[curr][key] = head
+    if key_hash not in self.keys[curr]:
+      head = LinkedNode(key)
+      self.keys[curr][key_hash] = head
     else:
-      head = self.keys[curr][key]
+      head = self.keys[curr][key_hash]
       while head.next is not None:
         head = head.next
-      head.next = LinkedNode(key_hash)
+      head.next = LinkedNode(key)
   
   def remove_node(self, node):
     """Removes a node and its replicas from the hash ring."""
@@ -139,8 +139,8 @@ class HashRing:
       del(self.node_map[node_hash])
 
       #rehash the keys and add them to 
-      for key, linkedNode in keys_to_rehash.items():
-        self.add_key(key, linkedNode.key)
+      for key_hash, linkedNode in keys_to_rehash.items():
+        self.add_key(linkedNode.key, key_hash)
     self.nodes.remove(node)
 
   def remove_key(self, key):
@@ -179,7 +179,7 @@ class HashRing:
         current = current.next
     return server_nodes
 
-  def removeNode(self, prev, currentNode, node_hash, key_hash):
+  def remove_list_node(self, prev, currentNode, node_hash, key_hash):
     if prev == None:
       if currentNode.next == None:
         del self.keys.get(node_hash)[key_hash]
@@ -210,6 +210,26 @@ class HashRing:
       replicated_hash_keys.append(self.hash_function(key, 12345+i))
     return replicated_hash_keys
   
+  def print_summary(self):
+    count_dic = {}
+    print("===========================================================================================================================================")
+    for virtual_node, value in self.keys.items():
+      count =0
+      for key, link_node in value.items():
+        count= count+1
+        while link_node.next!= None :
+          link_node = link_node.next
+          count= count+1
+      count_dic[str(virtual_node)] = count
+
+    for virtual_node, value in count_dic.items():
+        print("Virtual Node: " + str(virtual_node))
+        
+        print("Count:         "+ str(value))
+        
+        print()
+    print("===========================================================================================================================================")
+    print()
   def print_data(self):
       print("===========================================================================================================================================")
       print("Current configuration:")
