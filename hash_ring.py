@@ -179,7 +179,7 @@ class HashRing:
         current = current.next
     return server_nodes
 
-  def removeNode(self, prev, currentNode, node_hash, key_hash):
+  def remove_list_node(self, prev, currentNode, node_hash, key_hash):
     if prev == None:
       if currentNode.next == None:
         del self.keys.get(node_hash)[key_hash]
